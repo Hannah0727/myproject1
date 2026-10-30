@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>揪團活動｜揪命啊</title>
+</head>
+<body>
+    <h1>揪命啊｜揪團活動</h1>
+
+    <form method="get">
+        <input
+            type="text"
+            name="q"
+            value="{{ keyword }}"
+            placeholder="搜尋想參加的活動"
+        >
+        <button type="submit">搜尋活動</button>
+    </form>
+
+    {% if keyword %}
+        <p>目前搜尋：{{ keyword }}</p>
+    {% endif %}
+
+    <ul>
+        {% for event in events %}
+            <li>
+                <a href="{% url 'chillme:event-detail' event.id %}">
+                    {{ event.name }}
+                </a>
+                ｜{{ event.code }}
+            </li>
+        {% empty %}
+            <li>目前沒有符合條件的揪團活動。</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/">回到首頁</a>
+</body>
+</html>
