@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>建立活動｜揪命啊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-800">
+
+    <main class="mx-auto max-w-xl px-6 py-12">
+
+        <a href="{% url 'chillme:event-list' %}"
+           class="text-sm font-medium text-blue-600 hover:underline">
+            ← 返回活動列表
+        </a>
+
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+
+            <h1 class="text-2xl font-bold text-slate-900">
+                建立揪團活動
+            </h1>
+
+            <form method="post" class="mt-6 space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label for="name" class="block text-sm font-medium">
+                        活動名稱
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ name|default:'' }}"
+                        maxlength="100"
+                        required
+                        class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3"
+                        placeholder="例如：週末一起打羽球"
+                    >
+                </div>
+
+                <div>
+                    <label for="code" class="block text-sm font-medium">
+                        活動代碼
+                    </label>
+                    <input
+                        type="text"
+                        id="code"
+                        name="code"
+                        value="{{ code|default:'' }}"
+                        maxlength="12"
+                        required
+                        class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3"
+                        placeholder="例如：SPORT001"
+                    >
+                </div>
+
+                <!-- 多對多：活動標籤 -->
+                <fieldset>
+                    <legend class="block text-sm font-medium">
+                        活動標籤（可複選）
+                    </legend>
+
+                    <div class="mt-3 flex flex-wrap gap-3">
+                        {% for tag in tags %}
+                            <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-3">
+                                <input
+                                    type="checkbox"
+                                    name="tags"
+                                    value="{{ tag.id }}"
+                                    {% if tag.id|stringformat:"s" in selected_tag_ids %}checked{% endif %}
+                                    class="h-4 w-4 accent-blue-600"
+                                >
+                                <span>{{ tag.name }}</span>
+                            </label>
+                        {% empty %}
+                            <p class="text-sm text-slate-500">
+                                目前還沒有活動標籤。
+                            </p>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                {% if error %}
+                    <p class="text-sm text-red-600">
+                        {{ error }}
+                    </p>
+                {% endif %}
+
+                <button
+                    type="submit"
+                    class="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+                >
+                    建立活動
+                </button>
+            </form>
+
+        </section>
+
+    </main>
+
+</body>
+</html>

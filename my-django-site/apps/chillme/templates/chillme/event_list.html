@@ -5,37 +5,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>揪團活動｜揪命啊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>揪命啊｜揪團活動</h1>
 
-    <form method="get">
-        <input
-            type="text"
-            name="q"
-            value="{{ keyword }}"
-            placeholder="搜尋想參加的活動"
-        >
-        <button type="submit">搜尋活動</button>
-    </form>
+<body class="min-h-screen bg-slate-50 text-slate-800">
 
-    {% if keyword %}
-        <p>目前搜尋：{{ keyword }}</p>
-    {% endif %}
+    <main class="mx-auto max-w-2xl px-6 py-12">
 
-    <ul>
-        {% for event in events %}
-            <li>
-                <a href="{% url 'chillme:event-detail' event.id %}">
-                    {{ event.name }}
+        <a href="/"
+           class="text-sm font-medium text-blue-600 hover:underline">
+            ← 回到揪命啊首頁
+        </a>
+
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+
+            <div class="flex items-center justify-between gap-4">
+                <h1 class="text-2xl font-bold text-slate-900">
+                    揪命啊｜揪團活動
+                </h1>
+
+                <a href="{% url 'chillme:event-create' %}"
+                   class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                    ＋ 新增活動
                 </a>
-                ｜{{ event.code }}
-            </li>
-        {% empty %}
-            <li>目前沒有符合條件的揪團活動。</li>
-        {% endfor %}
-    </ul>
+            </div>
 
-    <a href="/">回到首頁</a>
+            <form method="get" class="mt-6 flex gap-2">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ keyword }}"
+                    placeholder="搜尋想參加的活動"
+                    class="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3"
+                >
+
+                <button
+                    type="submit"
+                    class="rounded-lg bg-slate-800 px-4 py-3 font-medium text-white hover:bg-slate-700">
+                    搜尋活動
+                </button>
+            </form>
+
+            {% if keyword %}
+                <p class="mt-4 text-sm text-slate-500">
+                    目前搜尋：{{ keyword }}
+                </p>
+            {% endif %}
+
+            <ul class="mt-6 divide-y divide-slate-200">
+                {% for event in events %}
+                    <li class="py-4">
+                        <a href="{% url 'chillme:event-detail' event.id %}"
+                           class="font-medium text-blue-600 hover:underline">
+                            {{ event.name }}
+                        </a>
+
+                        <p class="mt-1 text-sm text-slate-500">
+                            活動代碼：{{ event.code }}
+                        </p>
+                    </li>
+                {% empty %}
+                    <li class="py-4 text-slate-500">
+                        目前沒有符合條件的揪團活動。
+                    </li>
+                {% endfor %}
+            </ul>
+
+        </section>
+
+    </main>
+
 </body>
 </html>
