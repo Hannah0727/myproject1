@@ -1,3 +1,5 @@
+
+from django.conf import settings
 from django.db import models
 
 
@@ -49,6 +51,15 @@ class Event(models.Model):
         unique=True,
         verbose_name="活動代碼"
     )
+
+    # Week 7：記錄活動建立者
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="owned_events",
+        verbose_name="建立者",
+    )
+
     line_group = models.OneToOneField(
         LineGroup,
         on_delete=models.SET_NULL,

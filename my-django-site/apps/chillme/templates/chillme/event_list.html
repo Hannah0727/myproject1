@@ -19,7 +19,9 @@
 
         <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
-            <div class="flex items-center justify-between gap-4">
+            <!-- 活動列表標題 -->
+            <div class="flex flex-wrap items-center justify-between gap-4">
+
                 <h1 class="text-2xl font-bold text-slate-900">
                     揪命啊｜揪團活動
                 </h1>
@@ -28,9 +30,46 @@
                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
                     ＋ 新增活動
                 </a>
+
             </div>
 
+            <!-- 會員登入狀態 -->
+            <div class="mt-6 flex flex-wrap items-center gap-3 border-b border-slate-200 pb-5">
+
+                {% if user.is_authenticated %}
+
+                    <span class="text-sm font-medium text-slate-600">
+                        你好，{{ user.profile.display_name|default:user.username }}！
+                    </span>
+
+                    <form method="post" action="{% url 'account_logout' %}">
+                        {% csrf_token %}
+
+                        <button type="submit"
+                                class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">
+                            登出
+                        </button>
+                    </form>
+
+                {% else %}
+
+                    <a href="{% url 'account_signup' %}"
+                       class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">
+                        註冊
+                    </a>
+
+                    <a href="{% url 'account_login' %}"
+                       class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        登入
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+            <!-- 搜尋活動 -->
             <form method="get" class="mt-6 flex gap-2">
+
                 <input
                     type="text"
                     name="q"
@@ -44,17 +83,23 @@
                     class="rounded-lg bg-slate-800 px-4 py-3 font-medium text-white hover:bg-slate-700">
                     搜尋活動
                 </button>
+
             </form>
 
+            <!-- 搜尋關鍵字 -->
             {% if keyword %}
                 <p class="mt-4 text-sm text-slate-500">
                     目前搜尋：{{ keyword }}
                 </p>
             {% endif %}
 
+            <!-- 活動列表 -->
             <ul class="mt-6 divide-y divide-slate-200">
+
                 {% for event in events %}
+
                     <li class="py-4">
+
                         <a href="{% url 'chillme:event-detail' event.id %}"
                            class="font-medium text-blue-600 hover:underline">
                             {{ event.name }}
@@ -63,12 +108,23 @@
                         <p class="mt-1 text-sm text-slate-500">
                             活動代碼：{{ event.code }}
                         </p>
+
+                        <!-- Week 7：顯示活動建立者 -->
+                        <p class="mt-1 text-sm text-slate-500">
+                            建立者：
+                            {{ event.owner.profile.display_name|default:event.owner.username }}
+                        </p>
+
                     </li>
+
                 {% empty %}
+
                     <li class="py-4 text-slate-500">
                         目前沒有符合條件的揪團活動。
                     </li>
+
                 {% endfor %}
+
             </ul>
 
         </section>

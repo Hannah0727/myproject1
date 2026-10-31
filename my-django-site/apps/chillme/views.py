@@ -1,4 +1,5 @@
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
@@ -9,7 +10,7 @@ class EventDetailView(View):
     def get(self, request, event_id):
         event = get_object_or_404(
             Event.objects
-            .select_related("line_group")
+            .select_related("line_group", "owner")
             .prefetch_related("registrations", "tags"),
             id=event_id,
         )
@@ -23,7 +24,7 @@ class EventDetailView(View):
 class EventListView(View):
     def get(self, request):
         keyword = request.GET.get("q", "").strip()
-        events = Event.objects.all()
+        events = Event.objects.select_related("owner")
 
         if keyword:
             events = events.filter(name__icontains=keyword)
@@ -40,7 +41,7 @@ class EventListView(View):
         )
 
 
-class EventCreateView(View):
+class EventCreateView(LoginRequiredMixin, View):
     template_name = "chillme/event_create.html"
 
     def get(self, request):
@@ -89,11 +90,14 @@ class EventCreateView(View):
                 status=400
             )
 
-        selected_tags = Tag.objects.filter(id__in=selected_tag_ids)
+        selected_tags = Tag.objects.filter(
+            id__in=selected_tag_ids
+        )
 
         event = Event.objects.create(
             name=name,
             code=code,
+            owner=request.user,
         )
 
         event.tags.set(selected_tags)

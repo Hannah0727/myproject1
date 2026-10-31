@@ -19,13 +19,30 @@
 
         <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
+            <!-- 活動名稱 -->
             <h1 class="text-3xl font-bold text-slate-900">
                 {{ event.name }}
             </h1>
 
+            <!-- 活動基本資訊 -->
             <div class="mt-6 space-y-3">
-                <p>活動代碼：{{ event.code }}</p>
-                <p>建立時間：{{ event.created_at }}</p>
+
+                <p>
+                    活動代碼：{{ event.code }}
+                </p>
+
+                <p>
+                    建立時間：{{ event.created_at }}
+                </p>
+
+                <!-- Week 7：活動建立者 -->
+                <p>
+                    建立者：
+                    <span class="font-medium text-blue-700">
+                        {{ event.owner.profile.display_name|default:event.owner.username }}
+                    </span>
+                </p>
+
             </div>
 
             <hr class="my-6 border-slate-200">
@@ -36,16 +53,21 @@
             </h2>
 
             {% if event.line_group %}
+
                 <p class="mt-4">
                     群組名稱：{{ event.line_group.display_name }}
                 </p>
+
                 <p class="mt-2">
                     LINE 群組 ID：{{ event.line_group.group_id }}
                 </p>
+
             {% else %}
+
                 <p class="mt-4 text-slate-500">
                     此活動尚未綁定 LINE 群組。
                 </p>
+
             {% endif %}
 
             <hr class="my-6 border-slate-200">
@@ -56,21 +78,28 @@
             </h2>
 
             <div class="mt-4 flex flex-wrap gap-2">
+
                 {% for tag in event.tags.all %}
+
                     <span class="rounded-full bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700">
                         {{ tag.name }}
                     </span>
+
                 {% empty %}
+
                     <p class="text-slate-500">
                         這個活動目前沒有標籤。
                     </p>
+
                 {% endfor %}
+
             </div>
 
             <hr class="my-6 border-slate-200">
 
             <!-- 一對多：報名紀錄 -->
             <div class="flex items-center justify-between gap-4">
+
                 <h2 class="text-xl font-bold text-slate-900">
                     報名名單
                 </h2>
@@ -78,24 +107,34 @@
                 <span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
                     報名紀錄
                 </span>
+
             </div>
 
             <ul class="mt-4 divide-y divide-slate-200">
+
                 {% for registration in event.registrations.all %}
+
                     <li class="py-4">
+
                         <p class="font-medium text-slate-800">
                             {{ registration.participant_name }}
                         </p>
+
                         <p class="mt-1 text-sm text-slate-500">
                             報名時間：
                             {{ registration.created_at|date:"Y/m/d H:i" }}
                         </p>
+
                     </li>
+
                 {% empty %}
+
                     <li class="py-4 text-sm text-slate-500">
                         這個活動目前還沒有報名紀錄。
                     </li>
+
                 {% endfor %}
+
             </ul>
 
         </section>
