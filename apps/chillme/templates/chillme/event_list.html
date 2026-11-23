@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block title %}揪團活動｜揪命啊{% endblock %}
+{% block content %}
+<main class="mx-auto max-w-2xl px-6 py-12">
+  <a href="/" class="text-sm font-medium text-blue-600 hover:underline">← 回到揪命啊首頁</a>
+  <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-4"><h1 class="text-2xl font-bold text-slate-900">揪命啊｜揪團活動</h1><a href="{% url 'chillme:event-create' %}" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">＋ 新增活動</a></div>
+    <div class="mt-6 flex flex-wrap items-center gap-3 border-b border-slate-200 pb-5">
+      {% if user.is_authenticated %}<span class="text-sm font-medium text-slate-600">你好，{{ user.profile.display_name|default:user.username }}！</span><form method="post" action="{% url 'account_logout' %}">{% csrf_token %}<button type="submit" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">登出</button></form>{% else %}<a href="{% url 'account_signup' %}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100">註冊</a><a href="{% url 'account_login' %}" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">登入</a>{% endif %}
+    </div>
+    <div id="event-list-app" class="mt-6" data-endpoint="{% url 'chillme:event-list-data' %}">
+      <form id="event-search-form" class="flex gap-2"><label class="sr-only" for="event-search-input">搜尋想參加的活動</label><input id="event-search-input" type="search" name="q" value="{{ keyword }}" placeholder="搜尋想參加的活動" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-4 py-3"><button type="submit" class="rounded-lg bg-slate-800 px-4 py-3 font-medium text-white hover:bg-slate-700">搜尋活動</button></form>
+      <p id="event-list-status" class="mt-4 text-sm text-slate-500" aria-live="polite"></p>
+      <div id="event-list-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"></div>
+      <ul id="event-list-results" class="mt-6 min-h-48 divide-y divide-slate-200" aria-live="polite"></ul>
+      <nav id="event-list-pagination" class="mt-6 flex items-center justify-between gap-4" aria-label="活動列表分頁"></nav>
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block extra_head %}<script src="{% static 'chillme/js/event-list.js' %}" defer></script>{% endblock %}
