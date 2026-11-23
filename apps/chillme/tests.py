@@ -1,11 +1,21 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.db import transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from unittest.mock import patch
 
 from .models import Event
+from .views import EVENT_LIST_CACHE_VERSION_KEY
 
 
 @override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "event-list-tests",
+        },
+    },
     STORAGES={
         "staticfiles": {
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
@@ -14,6 +24,7 @@ from .models import Event
 )
 class EventListDataViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.owner = get_user_model().objects.create_user(
             username="organizer",
             password="test-password",
@@ -45,6 +56,81 @@ class EventListDataViewTests(TestCase):
         })
         self.assertEqual(payload["query"], "")
         self.assertEqual(payload["items"][0]["owner_name"], "organizer")
+
+    def test_reuses_a_cached_response_for_the_same_normalized_request(self):
+        data_url = reverse("chillme:event-list-data")
+
+        with patch(
+            "apps.chillme.views.Event.objects.select_related",
+            wraps=Event.objects.select_related,
+        ) as select_related:
+            self.client.get(data_url, {"q": " 羽球 ", "page": 1})
+            self.client.get(data_url, {"q": "羽球", "page": 1})
+
+        self.assertEqual(select_related.call_count, 1)
+
+    def test_returns_data_when_the_cache_read_fails(self):
+        data_url = reverse("chillme:event-list-data")
+
+        with patch("apps.chillme.views.cache", create=True) as mocked_cache:
+            mocked_cache.get.side_effect = ConnectionError
+            response = self.client.get(data_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["items"]), 20)
+        mocked_cache.get.assert_called_once()
+
+    def test_creating_an_event_advances_the_cache_version_after_commit(self):
+        self.client.get(reverse("chillme:event-list-data"))
+        initial_version = cache.get(EVENT_LIST_CACHE_VERSION_KEY)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            Event.objects.create(
+                name="快取後新增的活動",
+                code="NEW-CACHE",
+                owner=self.owner,
+            )
+
+        self.assertEqual(cache.get(EVENT_LIST_CACHE_VERSION_KEY), initial_version + 1)
+
+    def test_rolled_back_event_creation_keeps_the_cache_version(self):
+        self.client.get(reverse("chillme:event-list-data"))
+        initial_version = cache.get(EVENT_LIST_CACHE_VERSION_KEY)
+
+        with self.assertRaises(RuntimeError):
+            with transaction.atomic():
+                Event.objects.create(
+                    name="取消建立的活動",
+                    code="ROLLED-BACK",
+                    owner=self.owner,
+                )
+                raise RuntimeError("rollback")
+
+        self.assertEqual(cache.get(EVENT_LIST_CACHE_VERSION_KEY), initial_version)
+
+    def test_event_creation_invalidates_cached_search_and_page_variants(self):
+        data_url = reverse("chillme:event-list-data")
+        self.client.get(data_url, {"page": 1})
+        self.client.get(data_url, {"q": "新活動", "page": 1})
+        self.client.get(data_url, {"page": 2})
+
+        with self.captureOnCommitCallbacks(execute=True):
+            Event.objects.create(
+                name="新活動快取失效測試",
+                code="INVALIDATE",
+                owner=self.owner,
+            )
+
+        first_page = self.client.get(data_url, {"page": 1}).json()
+        searched_page = self.client.get(data_url, {"q": "新活動", "page": 1}).json()
+        second_page = self.client.get(data_url, {"page": 2}).json()
+
+        self.assertEqual(first_page["pagination"]["total_count"], 23)
+        self.assertEqual(second_page["pagination"]["total_count"], 23)
+        self.assertEqual(
+            [item["name"] for item in searched_page["items"]],
+            ["新活動快取失效測試"],
+        )
 
     def test_filters_and_preserves_query_on_requested_page(self):
         response = self.client.get(

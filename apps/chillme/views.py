@@ -1,5 +1,8 @@
 
+from hashlib import sha256
+
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
@@ -8,6 +11,42 @@ from django.urls import reverse
 from django.views import View
 
 from .models import Event, Tag
+
+
+EVENT_LIST_CACHE_VERSION_KEY = "chillme:event-list:version"
+EVENT_LIST_CACHE_KEY_PREFIX = "chillme:event-list:data"
+
+
+def get_event_list_cache_version():
+    try:
+        version = cache.get(EVENT_LIST_CACHE_VERSION_KEY)
+        if version is None:
+            cache.add(EVENT_LIST_CACHE_VERSION_KEY, 1)
+            version = cache.get(EVENT_LIST_CACHE_VERSION_KEY, 1)
+        return int(version)
+    except Exception:
+        return None
+
+
+def advance_event_list_cache_version():
+    try:
+        if not cache.add(EVENT_LIST_CACHE_VERSION_KEY, 2):
+            cache.incr(EVENT_LIST_CACHE_VERSION_KEY)
+    except Exception:
+        pass
+
+
+def event_list_cache_key(version, keyword, page):
+    keyword_hash = sha256(keyword.encode()).hexdigest()
+    return f"{EVENT_LIST_CACHE_KEY_PREFIX}:v{version}:q{keyword_hash}:p{page}"
+
+
+def normalized_requested_page(value):
+    try:
+        page = int(value)
+    except (TypeError, ValueError):
+        return None
+    return page if page > 0 else None
 
 
 class EventDetailView(View):
@@ -50,13 +89,30 @@ class EventListDataView(View):
 
     def get(self, request):
         keyword = request.GET.get("q", "").strip()
+        requested_page = request.GET.get("page", 1)
+        candidate_page = normalized_requested_page(requested_page)
+        cache_version = get_event_list_cache_version()
+        cache_key = None
+
+        if cache_version is not None and candidate_page is not None:
+            cache_key = event_list_cache_key(
+                cache_version,
+                keyword,
+                candidate_page,
+            )
+            try:
+                cached_payload = cache.get(cache_key)
+            except Exception:
+                cached_payload = None
+            if cached_payload is not None:
+                return JsonResponse(cached_payload)
+
         events = Event.objects.select_related("owner")
 
         if keyword:
             events = events.filter(name__icontains=keyword)
 
         paginator = Paginator(events, self.page_size)
-        requested_page = request.GET.get("page", 1)
 
         try:
             page = paginator.page(requested_page)
@@ -64,6 +120,21 @@ class EventListDataView(View):
             page = paginator.page(1)
         except EmptyPage:
             page = paginator.page(paginator.num_pages)
+
+        resolved_cache_key = None
+        if cache_version is not None:
+            resolved_cache_key = event_list_cache_key(
+                cache_version,
+                keyword,
+                page.number,
+            )
+            if resolved_cache_key != cache_key:
+                try:
+                    cached_payload = cache.get(resolved_cache_key)
+                except Exception:
+                    cached_payload = None
+                if cached_payload is not None:
+                    return JsonResponse(cached_payload)
 
         items = []
         for event in page.object_list:
@@ -83,7 +154,7 @@ class EventListDataView(View):
                 ),
             })
 
-        return JsonResponse({
+        payload = {
             "items": items,
             "pagination": {
                 "page": page.number,
@@ -93,7 +164,15 @@ class EventListDataView(View):
                 "has_next": page.has_next(),
             },
             "query": keyword,
-        })
+        }
+
+        if resolved_cache_key is not None:
+            try:
+                cache.set(resolved_cache_key, payload)
+            except Exception:
+                pass
+
+        return JsonResponse(payload)
 
 
 class EventCreateView(LoginRequiredMixin, View):
