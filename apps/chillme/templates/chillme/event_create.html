@@ -1,0 +1,120 @@
+
+{% extends "core/base.html" %}
+
+{% block title %}建立活動｜揪命啊{% endblock %}
+
+{% block content %}
+
+    <main class="mx-auto max-w-xl px-6 py-12">
+
+        <a href="{% url 'chillme:event-list' %}"
+           class="text-sm font-medium text-[var(--site-primary)] hover:underline">
+            ← 返回活動列表
+        </a>
+
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+
+            <h1 class="text-2xl font-bold text-slate-900">
+                建立揪團活動
+            </h1>
+
+            <form method="post" class="mt-6 space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label for="name" class="block text-sm font-medium">
+                        活動名稱
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ name|default:'' }}"
+                        maxlength="100"
+                        required
+                        class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3"
+                        placeholder="例如：週末一起打羽球"
+                    >
+                </div>
+
+                <div>
+                    <label for="code" class="block text-sm font-medium">
+                        活動代碼
+                    </label>
+                    <input
+                        type="text"
+                        id="code"
+                        name="code"
+                        value="{{ code|default:'' }}"
+                        maxlength="12"
+                        required
+                        class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3"
+                        placeholder="例如：SPORT001"
+                    >
+                </div>
+
+                <div>
+                    <label for="event_at" class="block text-sm font-medium">活動時間</label>
+                    <input type="datetime-local" id="event_at" name="event_at" value="{{ event_at|default:'' }}" required class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3">
+                </div>
+
+                <div>
+                    <label for="location" class="block text-sm font-medium">活動地點</label>
+                    <input type="text" id="location" name="location" value="{{ location|default:'' }}" maxlength="150" required class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3" placeholder="例如：大安森林公園">
+                </div>
+
+                <div>
+                    <label for="capacity" class="block text-sm font-medium">人數上限</label>
+                    <input type="number" id="capacity" name="capacity" value="{{ capacity|default:'' }}" min="1" required class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3" placeholder="例如：8">
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium">活動說明 <span class="text-slate-500">（選填）</span></label>
+                    <textarea id="description" name="description" rows="4" class="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3" placeholder="集合方式、費用或需要準備的東西…">{{ description|default:'' }}</textarea>
+                </div>
+
+                <!-- 多對多：活動標籤 -->
+                <fieldset>
+                    <legend class="block text-sm font-medium">
+                        活動標籤（可複選）
+                    </legend>
+
+                    <div class="mt-3 flex flex-wrap gap-3">
+                        {% for tag in tags %}
+                            <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-3">
+                                <input
+                                    type="checkbox"
+                                    name="tags"
+                                    value="{{ tag.id }}"
+                                    {% if tag.id|stringformat:"s" in selected_tag_ids %}checked{% endif %}
+                                    class="h-4 w-4 accent-[var(--site-primary)]"
+                                >
+                                <span>{{ tag.name }}</span>
+                            </label>
+                        {% empty %}
+                            <p class="text-sm text-slate-500">
+                                目前還沒有活動標籤。
+                            </p>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                {% if error %}
+                    <p class="text-sm text-red-600">
+                        {{ error }}
+                    </p>
+                {% endif %}
+
+                <button
+                    type="submit"
+                    class="site-button site-button--primary w-full !rounded-lg"
+                >
+                    建立活動
+                </button>
+            </form>
+
+        </section>
+
+    </main>
+
+{% endblock %}

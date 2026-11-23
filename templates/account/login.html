@@ -1,0 +1,64 @@
+
+{% extends "core/base.html" %}
+{% load socialaccount %}
+
+{% block title %}登入｜揪命啊{% endblock %}
+
+{% block content %}
+  <main class="mx-auto flex min-h-screen max-w-md items-center px-6 py-12">
+    <section class="w-full rounded-3xl border border-[#F4CDE0] bg-white p-8 shadow-sm">
+
+      <a href="{% url 'chillme:event-list' %}"
+         class="text-sm font-bold text-[var(--site-primary)]">
+        ← 回到活動列表
+      </a>
+
+      <h1 class="mt-6 text-3xl font-black text-[var(--site-ink)]">
+        歡迎回到揪命啊！
+      </h1>
+
+      <p class="mt-3 text-slate-500">
+        登入帳號，繼續探索有趣的活動。
+      </p>
+
+      <form method="post"
+            action="{% url 'account_login' %}"
+            class="mt-8 space-y-4">
+
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit"
+                class="site-button site-button--primary w-full !rounded-xl">
+          登入
+        </button>
+      </form>
+
+      <div class="my-6 flex items-center gap-3 text-sm text-slate-400" aria-hidden="true">
+        <span class="h-px flex-1 bg-slate-200"></span>
+        <span>或</span>
+        <span class="h-px flex-1 bg-slate-200"></span>
+      </div>
+
+      <a href="{% provider_login_url 'google' %}"
+         class="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)] focus:ring-offset-2">
+        <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M21.35 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.79h3.59c2.1-1.93 3.32-4.78 3.32-7.75Z"/>
+          <path fill="#34A853" d="M12 21.75c2.62 0 4.82-.87 6.43-2.36l-3.59-2.79c-.99.67-2.25 1.07-3.84 1.07-2.95 0-5.45-1.99-6.34-4.67H.95v2.88A9.72 9.72 0 0 0 12 21.75Z"/>
+          <path fill="#FBBC05" d="M5.66 13c-.23-.67-.36-1.38-.36-2.12s.13-1.45.36-2.12V5.88H1.95A9.72 9.72 0 0 0 1 10.88c0 1.61.39 3.13 1.08 4.47L5.66 13Z"/>
+          <path fill="#EA4335" d="M12 4.08c1.75 0 3.32.6 4.56 1.78l3.42-3.42C16.81.93 14.61 0 12 0A9.72 9.72 0 0 0 1.95 5.88l3.71 2.88C6.55 6.07 9.05 4.08 12 4.08Z"/>
+        </svg>
+        使用 Google 登入
+      </a>
+
+      <p class="mt-6 text-sm text-slate-500">
+        還沒有帳號？
+        <a href="{% url 'account_signup' %}"
+           class="font-bold text-[var(--site-primary)]">
+          立即註冊
+        </a>
+      </p>
+
+    </section>
+  </main>
+{% endblock %}

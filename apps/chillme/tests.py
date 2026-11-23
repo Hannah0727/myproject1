@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from unittest.mock import patch
 
-from .models import Event
+from .models import Event, Registration
 from .views import EVENT_LIST_CACHE_VERSION_KEY
 
 
@@ -180,3 +180,58 @@ class EventListDataViewTests(TestCase):
             reverse("chillme:event-list-data"),
         )
         self.assertContains(response, "event-list.js")
+
+
+class EventParticipationTests(TestCase):
+    def setUp(self):
+        self.owner = get_user_model().objects.create_user(username="owner", password="test-password")
+        self.member = get_user_model().objects.create_user(username="member", password="test-password")
+        self.event = Event.objects.create(
+            name="週末桌遊",
+            code="TABLETOP",
+            owner=self.owner,
+            location="台北市",
+            capacity=1,
+        )
+
+    def test_authenticated_user_can_register_once_and_cancel(self):
+        self.client.force_login(self.member)
+        register_url = reverse("chillme:event-register", kwargs={"event_id": self.event.id})
+
+        self.client.post(register_url)
+        self.client.post(register_url)
+
+        self.assertEqual(Registration.objects.filter(event=self.event, user=self.member).count(), 1)
+        response = self.client.post(reverse("chillme:event-cancel-registration", kwargs={"event_id": self.event.id}))
+        self.assertRedirects(response, reverse("chillme:event-detail", kwargs={"event_id": self.event.id}))
+        self.assertFalse(Registration.objects.filter(event=self.event, user=self.member).exists())
+
+    def test_full_event_does_not_accept_another_registration(self):
+        Registration.objects.create(event=self.event, user=self.owner, participant_name="owner")
+        self.client.force_login(self.member)
+
+        self.client.post(reverse("chillme:event-register", kwargs={"event_id": self.event.id}))
+
+        self.assertFalse(Registration.objects.filter(event=self.event, user=self.member).exists())
+
+    def test_dashboard_shows_owned_and_registered_events(self):
+        joined_event = Event.objects.create(name="電影", code="MOVIE", owner=self.member)
+        Registration.objects.create(event=joined_event, user=self.owner, participant_name="owner")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(reverse("chillme:dashboard"))
+
+        self.assertContains(response, self.event.name)
+        self.assertContains(response, joined_event.name)
+
+    def test_create_event_accepts_schedule_location_and_capacity(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("chillme:event-create"),
+            {"name": "晨跑", "code": "RUN2026", "event_at": "2026-12-01T08:30", "location": "河濱公園", "capacity": "6", "description": "一起輕鬆跑"},
+        )
+
+        event = Event.objects.get(code="RUN2026")
+        self.assertRedirects(response, reverse("chillme:event-detail", kwargs={"event_id": event.id}))
+        self.assertEqual(event.location, "河濱公園")
+        self.assertEqual(event.capacity, 6)
